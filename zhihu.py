@@ -23,7 +23,8 @@ headers={
 
 urllist=[]
 next_page_url='https://www.zhihu.com/api/v4/members/excited-vczh/followers?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cgender%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=20&offset=0'
-#获取并解析网页
+
+# 获取并解析网页
 def get_page(res_url):
     r=requests.get(res_url,headers=headers)
     if r.status_code==200:
@@ -32,13 +33,15 @@ def get_page(res_url):
         return html
     else:
         print('html error:'+str(r.status_code))
-#将数据存入mongodb
+        
+# 将数据存入mongodb
 def store_to_mongodb(dirc):
     client=MongoClient()
     db=client.zhihu_user_profile
     col=db.user_profile
     col.insert(dirc)
-#读取并存入一页的用户链接
+    
+# 读取并存入一页的用户链接
 def a_page_url(urls):
     global next_page_url
     json = requests.get(urls, headers=headers,timeout=3).json()
@@ -50,35 +53,35 @@ def a_page_url(urls):
 def get_data(url,next_url):
     global next_page_url
     user_data = {}
-    tree=get_page(url)#获取到解析后的代码
+    tree=get_page(url)  # 获取到解析后的代码
     user_data['性别']=tree.xpath('//*[@id="root"]/div/main/div/div/meta[2]/@content')
     user_data['昵称']=tree.xpath('//*[@id="ProfileHeader"]/div/div[2]/div/div[2]/div[1]/h1/span[1]/text()')
 
     签名=tree.xpath('//*[@id="ProfileHeader"]/div/div[2]/div/div[2]/div[1]/h1/span[2]/text()')
     if 签名:
-        user_data['签名'] =签名
+        user_data['签名'] = 签名
     else:
-        user_data['签名'] =''
+        user_data['签名'] = ''
 
     行业=tree.xpath('//*[@id="ProfileHeader"]/div/div[2]/div/div[2]/div[2]/span/div/div[1]/text()[1]')
     if 行业:
-        user_data['行业']=行业
+        user_data['行业'] = 行业
     else:
-        user_data['行业']=''
+        user_data['行业'] = ''
 
     职位=tree.xpath('//*[@id="ProfileHeader"]/div/div[2]/div/div[2]/div[2]/span/div/div[1]/text()[2]')
     if 职位:
-        user_data['职位']=职位
+        user_data['职位'] = 职位
     else:
-        user_data['职位']=''
+        user_data['职位'] = ''
 
     学校=tree.xpath('//*[@id="ProfileHeader"]/div/div[2]/div/div[2]/div[2]/span/div/div[2]/text()')
     if 学校:
-        user_data['学校']=学校
+        user_data['学校'] = 学校
     else:
-        user_data['学校']=''
+        user_data['学校'] = ''
 
-    store_to_mongodb(user_data)#将数据存入mongodb
+    store_to_mongodb(user_data)  # 将数据存入mongodb
     a_page_url(next_page_url)
     store_all_users_url()
 
@@ -89,19 +92,19 @@ def store_all_users_url():
         a_page_url(next_page_url)
         print(j)
         j+=1
-        sleep(random.randint(3,6))#休息5秒
+        sleep(random.randint(3,6)) # 随机暂停友好爬取
 
-def BFS_cpature():#按广度优先搜索爬取
+def bfs_cpature(): # 按广度优先搜索爬取
     global next_page_url
-    #第一步，以轮子哥为起点，爬取轮子哥的信息并且存储所有关注他的人的url
+    # 第一步，以轮子哥为起点，爬取轮子哥的信息并且存储所有关注他的人的url
     url = 'https://www.zhihu.com/people/excited-vczh/followers'
-    #@next_page_url = 'https://www.zhihu.com/api/v4/members/excited-vczh/followers?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cgender%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=20&offset=0'
+    # @next_page_url = 'https://www.zhihu.com/api/v4/members/excited-vczh/followers?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cgender%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=20&offset=0'
     get_data(url,next_page_url)
     #第二部，重复从urllist中提取url，爬取此人信息并将关注他的人添加到urllist
     i=0
     while urllist[i]:
         url='https://www.zhihu.com/people/{}/followers'.format(urllist[i])
-        #next_page_url='https://www.zhihu.com/api/v4/members/{}/followers?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cgender%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=20&offset=0'.format(urllist[i])
+        # next_page_url='https://www.zhihu.com/api/v4/members/{}/followers?include=data%5B%2A%5D.answer_count%2Carticles_count%2Cgender%2Cfollower_count%2Cis_followed%2Cis_following%2Cbadge%5B%3F%28type%3Dbest_answerer%29%5D.topics&limit=20&offset=0'.format(urllist[i])
         get_data(url,next_page_url)
         print('获取第',i+1,'条信息')
         i+=1
